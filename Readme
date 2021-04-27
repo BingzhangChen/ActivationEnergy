@@ -1,33 +1,38 @@
-This file accompanies the paper entitled "Why thermal sensitivity differs between autotrophs and heterotrophs?" submitted to Limnology and Oceanography and introduces each file (including the source data file) used for statistical analysis and plotting. 
+This file accompanies the paper entitled "Critiquing cross-taxa meta-analyses of thermal performance: misleading and inappropriate?" submitted to The American Naturalist and introduces each file (including the source data file) used for statistical analysis and plotting. 
 
 *************Metadata for essential files*************************
 
 ****Data files*****
 Microzoo_23Mar2020.csv: Original data of growth rate ~ temperature of microzooplankton.
 
-NEWphy24Mar2020.Rdata: merged  data of phytoplankton growth rate ~ temperature.
+NEWphy24Mar2020.Rdata: merged  data of phytoplankton growth rate ~ temperature. This dataset was expanded from Chen & Laws (2017) and Kremer et al. (2017).
 
 lno10523-sup-0008-suppinfo8.csv: original data from Kremer et al. (2017).
 
 Phyto_19Mar2020.csv: phytoplankton data of growth rate ~ temperature expanded from Chen & Laws (2017). 
 
+Data_source_references.docx: the word document containing the references lists of the data sources.
+
 ****End of Data files*****
 
 
 ****R scripts*****
-prep_new.R: R script used for reading the source data files ('Microzoo_23Mar2020.csv' & 'NEWphy24Mar2020.Rdata') and choose appropriate data that fit the selection criteria (see text for details). It also calculates the relevant information such as mean Boltzmann temperature for each taxon.
+prep_data.R: R script used for reading the source data files ('Microzoo_23Mar2020.csv' & 'NEWphy24Mar2020.Rdata') and choose appropriate data that fit the selection criteria (see text for details). It also calculates the relevant information such as mean Boltzmann temperature for each taxon.
 
-Phy_merge.R: R script to merge two phytoplankton datasets from Chen & Laws L&O (2017) and Kremer et al. L&O (2017) and remove the duplicates.
+Phy_merge.R: R script to merge two phytoplankton datasets from Chen & Laws (2017) and Kremer et al. (2017) and remove the duplicates.
 
-Fig1_E_defin.R: R script to generate Fig. 1 in the paper.
+Fig1Eapp_27Apr2021.R: R script to generate Fig. 1 in the paper. 
 
-Fig2Eapp.R: R script to generate Fig. 2 in the paper. 
+Fig2OLS_both_19Mar2021.R: R script to generate Fig. 2 in the paper.
 
-Fig3OLS_both.R: R script to generate Fig. 3 in the paper.
-
-Fig4_Table1_PHYZOOnls.R: R script to use nonlinear regression "nls" to fit the TPC of each taxon and calculates EaNL to generate Table 1 and Fig. 4 in the paper.
-
-Fig5PHYZOOEi.R: R script to generate Fig. 5 and calculates Ei for Table 2 in the paper.
+Table1.R: R script to generate Table 1 in the paper. It also contains the code to generate Table S1, Fig. S1 and S2 in the supplements.
 
 ****End of R scripts*****
+
+
+References:
+
+Chen, B., and E. A. Laws. 2017. Is there a difference of temperature sensitivity between marine phytoplankton and heterotrophs? Limnology and Oceanography 62:806–817.
+
+Kremer, C. T., M. K. Thomas, and E. Litchman. 2017. Temperature- and size-scaling of phytoplankton population growth rates: Reconciling the Eppley curve and the metabolic theory of ecology. Limnology and Oceanography 62:1658–1670.
 
