@@ -108,6 +108,7 @@ dat <- read.csv('Microzoo_23Mar2020.csv')
 dat[dat$Habitat == 'freshwater','Habitat'] <- 'Freshwater'
 zoodat         <- culldata(dat)
 zoodat2        <- zoodat$newdat  #Final oridat of zoo used for analysis
+zoodat         <- zoodat$oridat
 
 #The microzoo data in Chen & Laws 2017
 dat2017 <- read.csv('../Global_PP/microz.csv')
