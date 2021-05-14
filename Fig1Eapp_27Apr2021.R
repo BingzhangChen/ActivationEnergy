@@ -74,7 +74,7 @@ segments(x0 = 0,      y0 = b[1],
 #          x1 = T.K(0),   y1 = Ea*theta[1] + b[1],
 #          lty = 2, col = 3)
 
-mtext(expression(paste(bold(a)*') '*italic(E[app])*' & '*italic(E[a]))), adj=0, cex=1.4)
+mtext(expression(paste(bold(A)*') '*italic(E[app])*' & '*italic(E[a]))), adj=0, cex=1.4)
 mtext(expression(paste(bar(italic( x[j] )))), side = 1, adj = .25, col = 'blue', line = .1)
 #mtext(expression(paste(theta[j])),  side = 1, adj = .4,  col = 3,      line = .1)
 mtext('0', side = 1, adj = .52, col = 2)
@@ -88,6 +88,6 @@ plot(xbar, b,
      xaxt = 'n',
      yaxt = 'n')
 abline(lm(b ~ xbar), lwd = 1.5, col = 2 )
-mtext(expression(paste(bold(b)*') '* italic(E[e]))), adj=0, cex=1.4)
+mtext(expression(paste(bold(B)*') '* italic(E[e]))), adj=0, cex=1.4)
 
 dev.off()

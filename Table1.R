@@ -14,9 +14,6 @@ source('prep_data.R')
 #Remove cyanobacteria
 phydat3 <- subset(phydat2, Group != 'Cyan')
 
-#Get strains with Topt >= 13 C
-phydat4 <- subset(phydat3, XoptL  > T.K(13))
-
 #Compute Ea using nonlinear mixed-effect model
 Ea_nlme <- function(dat){
   dat$ID <- factor(dat$ID)
