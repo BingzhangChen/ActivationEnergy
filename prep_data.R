@@ -1,8 +1,10 @@
 library(plyr)
+library(dplyr)
 kb       <- 8.62e-5
 Tref     <- 15
 T0       <- 273.15
 T.K      <- function(x) 1/((Tref+T0)*kb) - 1/((x + T0)*kb)
+revTK    <- function(x) 1/(1/(Tref + T0) - kb*x) - T0
 
 #Get species name
 get_spname <- function(string) {
@@ -24,6 +26,7 @@ get_spname <- function(string) {
 }
 
 culldata <- function(newdat){
+    newdat       <- newdat[!is.na(newdat$Temperature),]
     newdat$X     <- T.K(newdat$Temperature)
     newdat$xbar  <- NA  #mean X (below optimal temperature)
     newdat$incl  <- NA  #Whether to include this in nonlinear fitting
@@ -45,6 +48,7 @@ culldata <- function(newdat){
     for (i in 1:N){
       code <- PHYu$ID[i]
       tmp  <- newdat[newdat$ID == code,]
+      tmp  <- tmp[!is.na(tmp$X), ]
       tmp  <- tmp[order(tmp$Temperature,tmp$Growth),]
       
       #Whether include the data in later analysis
@@ -64,10 +68,11 @@ culldata <- function(newdat){
       dtemp <- attributes(tmp.mean)$dimnames[[1]]
       dtemp <- as.numeric(dtemp)
       optT  <- dtemp[which.max(tmp.mean)] #Optimal temperature
-      newdat[newdat$ID == code, ]$XoptL <- T.K(optT)
+      wx    <- which(newdat$ID == code & !is.na(newdat$X))
+      newdat[wx, ]$XoptL <- T.K(optT)
       
       #Maximal growth rate at optimal temp
-      newdat[newdat$ID == code, ]$umL   <- as.numeric(tmp.mean[which.max(tmp.mean)])
+      newdat[wx, ]$umL   <- as.numeric(tmp.mean[which.max(tmp.mean)])
       
      # temperatures lower than optT
       Tl   <- tmp$Temperature[tmp$Temperature <= optT & tmp$Growth > 0]
@@ -81,16 +86,16 @@ culldata <- function(newdat){
       
       #Xbar for each taxon
       xbar <- mean(tmp[tmp$Temperature <= optT, 'X'])
-      newdat[newdat$ID == code,]$xbar  <- rep(xbar, nrow(tmp))
+      newdat[wx,]$xbar  <- rep(xbar, nrow(tmp))
       
-      newdat[newdat$ID == code, ]$incl <- incl
+      newdat[wx, ]$incl <- incl
       RIGHT                            <- rep(F, nrow(tmp))
       RIGHT[tmp$Temperature > optT]    <- T
-      newdat[newdat$ID == code,]$right <- RIGHT
+      newdat[wx,]$right <- RIGHT
     }
     newdat$Sp    <- as.character(get_spname(newdat$Species))
     newdat       <- subset(newdat, incl ==TRUE)
-    newdat2      <- subset(newdat, right==FALSE)
+    newdat2      <- subset(newdat, right==FALSE) #Remove supraoptimal temperature
     return(list(oridat = newdat, newdat = newdat2))
 }
 
@@ -99,9 +104,17 @@ culldata <- function(newdat){
 load('NEWphy24Mar2020.Rdata')
 phydat       <- culldata(newdat)
 
-#Final oridat of phyto used for analysis
+#Final phyto data used for analysis
 phydat2      <- phydat$newdat  #Contains zero growth rate
-phydat       <- phydat$oridat
+phydat       <- phydat$oridat  #Contains the data of supraoptimal temperatures
+
+#Remove cyanobacteria (only eukaryotes)
+PEuk         <-  phydat[ phydat$Group != 'Cyan',] #All Euk phyto. data
+PEuk2        <- subset(phydat2, Group != 'Cyan')  #Eukaryotic phytoplankton after superoptimal data have been removed
+
+#Cyanobacteria only
+Cyn          <- phydat[ phydat$Group == 'Cyan',]  #All prokaryotic phyto. data
+Cyn2         <- subset(phydat2, Group== 'Cyan')
 
 #Microzooplankton data from David
 dat <- read.csv('Microzoo_23Mar2020.csv')
@@ -111,27 +124,124 @@ zoodat2        <- zoodat$newdat  #Final oridat of zoo used for analysis
 zoodat         <- zoodat$oridat
 
 #The microzoo data in Chen & Laws 2017
-dat2017 <- read.csv('../Global_PP/microz.csv')
-names(dat2017)[names(dat2017) == 'u']      <- 'Growth' 
-names(dat2017)[names(dat2017) == 'Temp']   <- 'Temperature'
-names(dat2017)[names(dat2017) == 'Classification'] <- 'Group'
-names(dat2017)[names(dat2017) == 'Strain'] <- 'ID' 
-dat2017 <- subset(dat2017, Habitat == 'Marine')
-dat2017 <- culldata(dat2017)
-dat2017 <- dat2017$newdat
+# dat2017 <- read.csv('../Global_PP/microz.csv')
+# names(dat2017)[names(dat2017) == 'u']      <- 'Growth' 
+# names(dat2017)[names(dat2017) == 'Temp']   <- 'Temperature'
+# names(dat2017)[names(dat2017) == 'Classification'] <- 'Group'
+# names(dat2017)[names(dat2017) == 'Strain'] <- 'ID' 
+# dat2017 <- subset(dat2017, Habitat == 'Marine')
+# dat2017 <- culldata(dat2017)
+# dat2017 <- dat2017$newdat
 
 #The Algae data in Wang et al. 2019
-wang_Algae2019 <- read.csv('Wang2019Algae.csv')
-wang_Algae2019$ID <- factor(wang_Algae2019$ID)
-wang_Algae2019$Temperature <- wang_Algae2019$Temperature - T0 
-wangAlgae <- culldata(wang_Algae2019)
-wangAlgae <- wangAlgae$newdat
+# wang_Algae2019 <- read.csv('Wang2019Algae.csv')
+# wang_Algae2019$ID <- factor(wang_Algae2019$ID)
+# wang_Algae2019$Temperature <- wang_Algae2019$Temperature - T0 
+# wangAlgae <- culldata(wang_Algae2019)
+# wangAlgae <- wangAlgae$newdat
+# 
+# #Using nls following Wang et al. (2019)
+# wang_Algae2019$X <- T.K(wang_Algae2019$Temperature)
+# 
+# #The microzoo data in Wang et al. 2019
+# wang2019 <- read.csv('Wang2019Protist.csv')
+# wang2019$Temperature <- wang2019$Temperature - T0 
+# wang <- culldata(wang2019)
+# wang <- wang$newdat
 
-#Using nls following Wang et al. (2019)
-wang_Algae2019$X <- T.K(wang_Algae2019$Temperature)
+#Insect data from Rezende and Bozinovic (2019)
+Insect <- 'Insects.csv'
+Insect <- read.csv(Insect)
+Insect$Group <- NA
+Insect$Growth<- Insect$Performance
+Insect$ID    <- as.factor(Insect$ID)
+Insect1      <- culldata(Insect)
+Insect2      <- Insect1$newdat
 
-#The microzoo data in Wang et al. 2019
-wang2019 <- read.csv('Wang2019Protist.csv')
-wang2019$Temperature <- wang2019$Temperature - T0 
-wang <- culldata(wang2019)
-wang <- wang$newdat
+#Bacteria data from Smith et al. NC 2019
+Bac <- read.csv('~/OneDrive/hotterbetterprokaryotes/Data/database.csv')
+
+#Restrict data to only Specific Growth rate
+Bac <- Bac %>% subset(StandardisedTraitName == 'Specific Growth Rate'
+          )%>% subset(is.na(ConTrophic) | ConTrophic != 'producer' #Remove photosynthetical autrophic bacteria
+          )%>% select(Longitude,
+                      Latitude,
+                      StandardisedTraitName, 
+                      StandardisedTraitValue,
+                      StandardisedTraitUnit,
+                      AmbientTemp,
+                      ConKingdom,
+                      ConTemp,
+                      ConGenus,
+                      ConSpecies,
+                      ConTrophic
+          )%>% subset(!(ConGenus %in% c('Trichodesmium',  #Remove autotrophs
+                                        'Synechococcus',
+                                        'Rhodomicrobium',
+                                        'Prochlorococcus',
+                                        'Rhodospirillum',
+                                        'Rhodopila',
+                                        'Rhodobacter'
+                                        )))
+
+#Assign ID
+Bac.ag <- Bac %>% select(Longitude,
+                         Latitude,
+                         StandardisedTraitName, 
+                         StandardisedTraitUnit,
+                         ConKingdom,
+                         ConTemp,
+                         ConGenus,
+                         ConSpecies,
+                         ConTrophic)
+
+Bac.ag <- ddply(Bac.ag, .(Longitude, 
+                          Latitude, 
+                          StandardisedTraitName, 
+                          StandardisedTraitUnit,
+                          ConKingdom,
+                          ConGenus,
+                          ConSpecies,
+                          ConTrophic), 
+                summarize,
+                Longitude             = Longitude[1],
+                Latitude              = Latitude[1],
+                ConGenus              = ConGenus[1],
+                ConSpecies            = ConSpecies[1],
+                StandardisedTraitName = StandardisedTraitName[1])
+
+Bac.ag$ID <- row.names(Bac.ag)
+
+#Assign ID back to Bac
+Bac$ID <- NA
+for (i in 1:nrow(Bac.ag)){
+  w <- which(Bac$ConGenus  == Bac.ag[i, 'ConGenus'  ]&
+             Bac$ConSpecies== Bac.ag[i, 'ConSpecies']&
+           #  Bac$Longitude == Bac.ag[i, 'Longitude' ]&
+           #  Bac$Latitude  == Bac.ag[i, 'Latitude'  ]&
+             Bac$StandardisedTraitName == Bac.ag[i, 'StandardisedTraitName'])
+  Bac[w, 'ID'] <- Bac.ag[i, 'ID']
+}
+
+Bac         <- Bac[!is.na(Bac$ID),]
+Bac$ID      <- as.factor(Bac$ID)
+Bac$Group   <- 'Bacteria'
+Bac$Species <- NA
+for (i in 1:nrow(Bac)){
+  Bac$Species[i] <- paste(Bac$ConGenus[i], Bac$ConSpecies[i])  
+}
+Bac$Temperature <- Bac$ConTemp
+Bac$Growth      <- Bac$StandardisedTraitValue * 86400
+
+#Remove extremephiles
+Bac             <- Bac[Bac$Temperature <= 50, ]
+
+#Clean the dataset and calculate the several attributes needed
+HBac            <- culldata(Bac)
+HBac2           <- HBac$newdat
+HBac            <- HBac$oridat    
+
+#Again, remove the extremephiles
+HBac2           <- HBac2[HBac2$XoptL <= T.K(35), ]
+HBac            <-  HBac[HBac$XoptL  <= T.K(35), ]
+  

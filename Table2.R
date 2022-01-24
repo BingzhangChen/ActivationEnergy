@@ -6,82 +6,34 @@ if (OS == 'Windows'){
 }
 
 setwd(paste0(prefix,"Kremer"))
-library(tidyverse)
 library(foreach)
-library(nlme)
 source('prep_data.R')
 
-#Remove cyanobacteria
-phydat3 <- subset(phydat2, Group != 'Cyan')
-
-#Compute Ea using nonlinear mixed-effect model
-Ea_nlme <- function(dat){
-  dat$ID <- factor(dat$ID)
-  
-  # #Linear mixed-effect model
-   sdat <- subset(dat, Growth > 0)
-  # 
-   zL2 <- lme(log(Growth) ~ X,
-             random = ~ 1 + X|ID,
-             data   = sdat, method = 'REML')
-  
-   z2 <- nlme(Growth ~ A*exp(E*X), 
-            data  = dat,
-            fixed = A + E ~ 1,
-            random= A + E ~ 1,
-            groups= ~ID,
-            start = c(A = 1, E = 0.65), method = 'REML')
-
-
-  return(list(nlme = coefficients(summary(z2)), 
-               lme = coefficients(summary(zL2)) ))
-  #separate within-species and across-species
-  # z3 <- nlme(Growth ~ A*exp(Ea*(X-xbar))*exp(Ee*xbar), 
-  #            data  = dat,
-  #            fixed = A + Ea + Ee ~ 1,
-  #            random= A + Ea      ~ 1,
-  #            groups= ~ID,
-  #            start = c(A = 1, Ea = 0.65, Ee = -0.1), method = 'REML')
-  
-}
-
-res_QQplot <- function(mod){
-  
-  #Examine residuals
-  resid <- residuals(mod)
-  
-  #Plot Q-Q norm of standardized residuals of nlme model:
-  stan_resid <- (resid-mean(resid))/sd(resid)
-  qqnorm(stan_resid, pch=16, col=2, cex=.5)
-  abline(0,1)
-  st = shapiro.test(resid)
-  return(list(w=st$statistic, p=st$p.value, SSE=sum(resid**2)))
-}
-
-#Weighed Covariance function
-wcov <- function(x, y, w){
-  stopifnot(length(x) == length(y) && length(x) == length(w))
-  stopifnot(round(sum(w),0) == 1L)   
-  xbar <- sum(x*w)
-  ybar <- sum(y*w)
-  
-  return(sum(w*(x-xbar)*(y-ybar)))
-}
-
 decomp <- function(oridat, remove.nonpositive = T, epsilon=0.01){
+  
+  #Weighed Covariance function
+  wcov <- function(x, y, w){
+    stopifnot(length(x) == length(y) && length(x) == length(w))
+    stopifnot(round(sum(w),0) == 1L)   
+    xbar <- sum(x*w)
+    ybar <- sum(y*w)
+    
+    return(sum(w*(x-xbar)*(y-ybar)))
+  }
+  
   if (remove.nonpositive) {
     oridat <- oridat %>% subset(Growth > 0)
   }else{
     oridat[oridat$Growth <= 0, 'Growth'] <- epsilon
   }
   
-  Eapp       <- numeric(5L)
+  Eapp       <- numeric(9L)  #Includes both terms of Einter equation and EL equation
   oridat$eps <- NA
-  unidat     <- ddply(oridat, .(ID), summarize,
-                    #  Habitat  = Habitat[1],
-                      ID       = ID[1],
-                      Species  = Sp[1],
-                      XoptL    = XoptL[1]     )
+  oridat$xi  <- NA
+  unidat     <- plyr::ddply(oridat, .(ID), summarize,
+                            ID       = ID[1],
+                            Species  = Sp[1],
+                            XoptL    = XoptL[1] )
 
   #grandmean of x
   GrandX <- mean(oridat$X)
@@ -93,16 +45,20 @@ decomp <- function(oridat, remove.nonpositive = T, epsilon=0.01){
     unidat[i, 'Tbar'] <- mean(tmp$X)
     unidat[i, 'var1'] <- sum((tmp$X - GrandX)**2)
     
-    #Calculate bj
-    LM1  <- lm(log(Growth) ~ X, tmp)
-    unidat[i, 'bj'] <- as.numeric(coef(LM1)[1])
-    unidat[i, 'Ea'] <- as.numeric(coef(LM1)[2])
-    
+    #Calculate y_{m,j} and E_{a,j} 
+    tmp$X1            <- tmp$X - tmp$XoptL[1]
+    LM1               <- lm(log(Growth) ~ X, tmp)
+    LM2               <- lm(log(Growth) ~ X1, tmp)
+    unidat[i, 'bj']   <- as.numeric(coef(LM1)[1])
+    unidat[i, 'Ea']   <- as.numeric(coef(LM2)[2])#Ea is the same for LM1 and LM2
+    unidat[i, 'ym']   <- as.numeric(coef(LM2)[1])
+
     #Add epsilon to oridat
     oridat[oridat$ID == code, 'eps'] <- LM1$residuals
+    oridat[oridat$ID == code, 'xi']  <- LM2$residuals
   }
  
-  #Median Ea
+  #Median Ea (Eintra)
   Ea_median <- median(unidat$Ea)
   
   #Total number of observations of the original data
@@ -118,57 +74,96 @@ decomp <- function(oridat, remove.nonpositive = T, epsilon=0.01){
   VARx  <- var(oridat$X)
   
   #variance of x_bar with unequal probabilities
-  VARxbar <- sum(p*(unidat$Tbar - GrandX)^2)
+  VARxbar     <- sum(p*(unidat$Tbar - GrandX)^2)
+  
+  #variance of optimal temperature  with unequal probabilities
+  #First, calculate mean Xm
+  
+  Mean_xm     <- sum(p*unidat$XoptL)
+  VARxm       <- sum(p*(unidat$XoptL - Mean_xm)^2)
+  
+  #covariance between x_{m} and \overline{x}
+  COV_xm_xbar <- wcov(unidat$XoptL, unidat$Tbar,p)
+  
+  #covariance between x_{m}E_{a} and \overline{x}
+  unidat$EaXm   <- unidat$Ea * unidat$XoptL
+  COV_Eaxm_xbar <- wcov(unidat$EaXm, unidat$Tbar, p)
+  
+  #correlation between slope (Ea) and intercept (bj)
+  #rho_Ea_Xbar <- cor(unidat$bj, unidat$Ea, method='spearman')       
   
   #First term
   Eapp[1] <- sum(unidat$Ea * unidat$var1)/M/VARx
 
-  #Calculate Ee for phytoplankton
-  Ee <- lm(bj ~ Tbar, unidat, weights = p)  #weighed linear regression
+  #2nd term
+  Eapp[2] <- -COV_Eaxm_xbar/VARx
   
-  #Obtain residuals (beta)
-  beta <- unidat$bj - predict(Ee, newdata=unidat)
+  #Calculate Einter for phytoplankton
+  Einter <- lm(bj ~ Tbar,  unidat, weights = p)  #weighed linear regression
+  
+  #Calculate EL for phytoplankton
+  EL <- lm(ym ~ XoptL, unidat, weights = p)  #weighed linear regression
+  
+  #Obtain residuals (nu) for EL
+  nu <- EL$residuals
+  
+  #Obtain residuals (beta) for Einter
+  beta <- Einter$residuals
 
   #check whether mean of weighed residuals is 0
-  #sum(p*beta)
+  #sum(p*nu)
 
-  Ee  <- as.numeric(coef(Ee)[2])
+  EL     <- as.numeric(coef(EL)[2]) #Obtain EL
+  Einter <- as.numeric(coef(Einter)[2]) #Obtain Einter
   
   # weighed variance of x
   # VARxbar1 <- wcov(unidat$Tbar, unidat$Tbar, p) confirms the calculation above
   
-  #Second term
-  Eapp[2]  <- Ee * VARxbar/VARx
+  #Third term
+  Eapp[3]  <- EL * COV_xm_xbar/VARx
   
-  #3rd term
-  COVEXbar <-  wcov(unidat$Ea, unidat$Tbar, p) #weighed covariance between Ea and xbar 
-  Eapp[3]  <-  GrandX  * COVEXbar  / VARx
-
   #4th term
-  COVbetaxbar <- wcov(beta, unidat$Tbar, p)
-  Eapp[4]     <- COVbetaxbar/VARx
+  COVEXbar <-  wcov(unidat$Ea, unidat$Tbar, p) #weighed covariance between Ea and xbar 
+  Eapp[4]  <-  GrandX  * COVEXbar  / VARx
+
+  #5th term
+  COVnuxbar   <- wcov(nu, unidat$Tbar, p)
+  Eapp[5]     <- COVnuxbar/VARx
   
-  #5th term 
+  #6th term 
+  COVXi_X  <- cov(oridat$X, oridat$xi)
+  Eapp[6]  <- COVXi_X / VARx
+  
+  #7th term (EinterVar(Xbar)/Var(x))
+  Eapp[7]  <- Einter * VARxbar /VARx
+    
+  #8th term (Cov(beta, xbar)/Var(x))
+  COVbetaxbar <- wcov(beta, unidat$Tbar, p)
+  Eapp[8]     <- COVbetaxbar/VARx
+  
+  #9th term (Cov(eps, X)/Var(x))
   COVepsX  <- cov(oridat$X, oridat$eps)
-  Eapp[5]  <- COVepsX / VARx
+  Eapp[9]  <- COVepsX / VARx
   
   #run OLS regression for full data
   fullLM <- lm(log(Growth) ~ X, oridat) 
   
-  return(list(n       = n,
-              M       = M,
-              VARx    = VARx,
-              VARxbar = VARxbar,
-              VARtheta= wcov(unidat$XoptL, unidat$XoptL, p),
-              Ee      = Ee, 
-              XMEAN   = GrandX,
-              COVEXbar= COVEXbar,
-              Ea_med  = Ea_median,
-              EappLM  = as.numeric(coef(fullLM)[2]), 
-              EappCal = Eapp))
+  return(list(n          = n,
+              M          = M,
+              VARx       = VARx,
+              VARxm      = VARxm,
+              VARxbar    = VARxbar,
+              COVXmXbar  = COV_xm_xbar,
+              COVEaxmxbar= COV_Eaxm_xbar,
+              Einter     = Einter,
+              EL         = EL, 
+              XMEAN      = GrandX,
+              COVEXbar   = COVEXbar,
+              Ea_med     = Ea_median,
+              EappLM     = as.numeric(coef(fullLM)[2]), 
+              EappCal    = Eapp))
 } 
 
-#phyto
 boot <- function(dat, Nrep = 100){
   result <- foreach(i=1:Nrep, .combine='rbind') %do% {
     
@@ -178,7 +173,8 @@ boot <- function(dat, Nrep = 100){
     x      <- subset(dat, ID %in% x)   #subsample
     x      <- decomp(x)
     
-    c(x$EappLM, x$Ea_med, x$Ee, sum(x$EappCal), x$EappCal[1], x$EappCal[2])
+    c(x$EappLM, x$Ea_med, x$Einter, x$EL, sum(x$EappCal[c(1,4,7,8,9)]), 
+      x$EappCal[1], x$EappCal[2], x$EappCal[3], x$EappCal[7])
   }
   MEAN <- apply(result,2,mean)
   SE   <- apply(result,2,sd)
@@ -199,32 +195,45 @@ OLSsize <- function(dat){
          SE_alpha = coefficients(Z)[3,2]))
 }
 
-aut0   <- decomp(phydat2, remove.nonpositive = F, epsilon = 0.001)
-aut0SE <-   boot(phydat2) 
+PEuk_decomp       <- decomp(PEuk2) #Autotrophic protists
+PEuk_decomp_boot  <-   boot(PEuk2) #Estimate the SE of each estimate by bootstrapping
+PEuk_nlme         <- Ea_nlme(PEuk2)#Estimate Ea based on nonlinear mixed-effect model
 
-aut    <- decomp(phydat3)
-autSE  <-   boot(phydat3)
-autnlme<- Ea_nlme(phydat3)
+#Check if Einter removing polar autotrophic protists
+PEuk3             <- PEuk2 %>% subset(XoptL >= min(zoodat2$XoptL))
+PEuk3_decomp      <- decomp(PEuk3)
+
+#Cyanobacteria
+Cyn_decomp       <- decomp(Cyn2)
+Cyn_decomp_boot  <-   boot(Cyn2) #Estimate the SE of each estimate by bootstrapping
+Cyn_nlme         <- Ea_nlme(Cyn2)#Estimate Ea based on nonlinear mixed-effect model
+
+
 OLSsize(phydat3)
 
-autw   <- decomp(phydat4)
-autwSE <-   boot(phydat4)
-
 #MicroZooplankton
-het    <- decomp(zoodat2)
-hetSE  <-   boot(zoodat2)
-hetnlme<- Ea_nlme(zoodat2)
+mzoo_decomp      <- decomp(zoodat2)
+mzoo_decomp_boot <-   boot(zoodat2)
+mzoo_nlme        <- Ea_nlme(zoodat2)
 OLSsize(zoodat2)
+# 
+# #micrzoo data in Chen & Laws 2017
+# het2017 <- decomp(dat2017)
+# 
+# #algae data in Wang et al. 2019
+# WangAlgae2019 <- decomp(wangAlgae)
+# 
+# #micrzoo data in Wang et al. 2019
+# Wang2019 <- decomp(wang)
 
-#micrzoo data in Chen & Laws 2017
-het2017 <- decomp(dat2017)
+#Insect data in Rezende and Bozinovic (2019)
+Ea_insect <- decomp(Insect2)
+Ea_insect_boot <- boot(Insect2)
 
-#algae data in Wang et al. 2019
-WangAlgae2019 <- decomp(wangAlgae)
+#Heterotrophic bacteria
+Ea_HBac   <- decomp(HBac2)
+Ea_HBac_boot <- boot(HBac2)
 
-
-#micrzoo data in Wang et al. 2019
-Wang2019 <- decomp(wang)
 
 #Plot residual plots
 QQplot <- function(dat, method='nlme', label='a'){
@@ -344,11 +353,11 @@ plot_taxon <- function(dat, filename, caption = ''){
                          'LME' =numeric(nrow(newx)),
                          'LFE' =numeric(nrow(newx)))
       #Find index for this taxon
-      w <- which(rownames(result.nlme)==id)
-      newy$NLME <- result.nlme[w, 'A'] * exp(result.nlme[w, 'E'] * T.K(newx$Temperature))
+      wNLME <- which(rownames(result.nlme)==id)
+      newy$NLME <- result.nlme[wNLME, 'A'] * exp(result.nlme[wNLME, 'E'] * T.K(newx$Temperature))
       
-      w <- which(rownames(result.lme)==id)
-      newy$LME  <- exp(result.lme[w, 1] + result.lme[w, 2] * T.K(newx$Temperature))
+      wLME <- which(rownames(result.lme)==id)
+      newy$LME  <- exp(result.lme[wLME, 1] + result.lme[wLME, 2] * T.K(newx$Temperature))
       
       newy$LFE  <- exp(coef(LFE)[1] + coef(LFE)[2] * T.K(newx$Temperature))
       
@@ -367,8 +376,8 @@ plot_taxon <- function(dat, filename, caption = ''){
       lines(newx$Temperature, newy$LFE,  col='blue', lwd=1.3)
       txt  <- paste0(tmp$Sp[1])
       mtext(txt, adj = 0, cex=.7)  #Add caption
-      text(34.4, 0, paste('Ea.nlme = ', round(result.nlme[w, 'E'],2)), pos=2, col=2)
-      text(34.4, umax*0.15,paste('Ea.lme = ', round( result.lme[w, 2],2)), pos=2, col=3)
+      text(34.4, 0, paste('Ea.nlme = ', round(result.nlme[wNLME, 'E'],2)), pos=2, col=2)
+      text(34.4, umax*0.15,paste('Ea.lme = ', round( result.lme[wLME, 2],2)), pos=2, col=3)
       text(34.4, umax*0.3, paste('Ea.lfe = ', round( coef(LFE)[2], 2)), pos=2, col='blue')
   }
   #Add figure caption
