@@ -7,6 +7,8 @@ if (OS == 'Windows'){
 
 setwd(paste0(prefix,"Kremer"))
 library(foreach)
+library(nlme)
+
 source('prep_data.R')
 
 decomp <- function(oridat, remove.nonpositive = T, epsilon=0.01){
@@ -164,6 +166,7 @@ decomp <- function(oridat, remove.nonpositive = T, epsilon=0.01){
               EappCal    = Eapp))
 } 
 
+#Use bootstrapping to estimate SE
 boot <- function(dat, Nrep = 100){
   result <- foreach(i=1:Nrep, .combine='rbind') %do% {
     
@@ -182,7 +185,7 @@ boot <- function(dat, Nrep = 100){
   return(list(mean=MEAN, se=SE))
 }
 
-#OLS regression by considering cell size (Table S1)
+#OLS regression by considering cell size (Table S3)
 OLSsize <- function(dat){
   sdat <- dat %>% subset(Growth > 0)
   Z <- lm(log(Growth) ~ X + log(Volume), sdat)
@@ -203,28 +206,19 @@ PEuk_nlme         <- Ea_nlme(PEuk2)#Estimate Ea based on nonlinear mixed-effect 
 PEuk3             <- PEuk2 %>% subset(XoptL >= min(zoodat2$XoptL))
 PEuk3_decomp      <- decomp(PEuk3)
 
+OLSsize(PEuk2) #Check the size effect on Eapp
+
 #Cyanobacteria
 Cyn_decomp       <- decomp(Cyn2)
 Cyn_decomp_boot  <-   boot(Cyn2) #Estimate the SE of each estimate by bootstrapping
 Cyn_nlme         <- Ea_nlme(Cyn2)#Estimate Ea based on nonlinear mixed-effect model
 
 
-OLSsize(phydat3)
-
 #MicroZooplankton
 mzoo_decomp      <- decomp(zoodat2)
 mzoo_decomp_boot <-   boot(zoodat2)
 mzoo_nlme        <- Ea_nlme(zoodat2)
 OLSsize(zoodat2)
-# 
-# #micrzoo data in Chen & Laws 2017
-# het2017 <- decomp(dat2017)
-# 
-# #algae data in Wang et al. 2019
-# WangAlgae2019 <- decomp(wangAlgae)
-# 
-# #micrzoo data in Wang et al. 2019
-# Wang2019 <- decomp(wang)
 
 #Insect data in Rezende and Bozinovic (2019)
 Ea_insect <- decomp(Insect2)
@@ -234,67 +228,7 @@ Ea_insect_boot <- boot(Insect2)
 Ea_HBac   <- decomp(HBac2)
 Ea_HBac_boot <- boot(HBac2)
 
-
-#Plot residual plots
-QQplot <- function(dat, method='nlme', label='a'){
-  #NLME residual plots
-  dat$ID <- factor(dat$ID)
-  
-  if (method == 'nlme'){
-    mod <- nlme(
-      Growth ~ A * exp(E * X),
-      data  = dat,
-      fixed = A + E ~ 1,
-      random = A + E ~ 1,
-      groups = ~ ID,
-      start = c(A = 1, E = 0.65),
-      method = 'REML'
-    )
-  }else if (method == 'lme'){
-    #LME residual plots
-    sdat   <- dat %>% subset(Growth > 0)
-    mod    <- lme(log(Growth) ~ X, 
-                   random = ~ 1 + X|ID,
-                   data   = sdat, method = 'REML')
-  }else if (method == 'lfe'){
-    #OLS residual plots
-    sdat <- dat %>% subset(Growth > 0)
-    mod  <- lm(log(Growth) ~ ID * X, data = sdat)
-  }else{
-    stop('Method wrong!')
-  }
-  
-  #Examine residuals
-  resid <- residuals(mod)
-  
-  #Plot Q-Q norm of standardized residuals of nlme model:
-  stan_resid <- (resid-mean(resid))/sd(resid)
-  qqnorm(stan_resid, xlim=c(-4,4), ylim=c(-4,4),pch=16, col=2, cex=.5, main='')
-  abline(0,1)
-  mtext(label, adj=0, cex=.8)
-  
-}
-
-#Plot both auto- and heterotrophs
-pdf('Residual_QQplot.pdf', width = 6, height = 4)
-par(font.lab  = 1,
-    family    = "serif",
-    mgp       = c(2.2,1,0),
-    mfrow     = c(2,3),
-    oma       = c(4,2,2,2),
-    mar       = c(4,4,1,.2))
-
-QQplot(phydat3, 'nlme', 'a) NLME, autotroph')
-QQplot(phydat3, 'lme',  'b) LME,  autotroph')
-QQplot(phydat3, 'lfe',  'c) LFE,  autotroph')
-
-QQplot(zoodat2, 'nlme', 'd) NLME, heterotroph')
-QQplot(zoodat2, 'lme',  'e) LME,  heterotroph')
-QQplot(zoodat2, 'lfe',  'f) LFE,  heterotroph')
-
-dev.off()
-
-#Plot each taxon
+#Plot each taxon(Fig. S1 and S2)
 TODAY      <- Sys.Date()
 phypdffile <- paste0('phyto_bytaxon_linear',    TODAY, '.pdf')
 zoopdffile <- paste0('microzoo_bytaxon_linear', TODAY, '.pdf')
@@ -336,7 +270,6 @@ plot_taxon <- function(dat, filename, caption = ''){
       mar       = c(4, 4, 3.5, .2),
       oma       = c(4,4,0,0))
   
-
   for (i in 1:Ntaxon) {
  
       id   <- levels(dat$ID)[i]
@@ -371,19 +304,19 @@ plot_taxon <- function(dat, filename, caption = ''){
            xlab = 'Temperature (ºC)',
            ylab = YLAB,
            cex.lab = 1.1)
-      lines(newx$Temperature, newy$NLME, col=2, lwd=1.3)
-      lines(newx$Temperature, newy$LME,  col=3, lwd=1.3)
+      #lines(newx$Temperature, newy$NLME, col=2, lwd=1.3)
+      #lines(newx$Temperature, newy$LME,  col=3, lwd=1.3)
       lines(newx$Temperature, newy$LFE,  col='blue', lwd=1.3)
       txt  <- paste0(tmp$Sp[1])
       mtext(txt, adj = 0, cex=.7)  #Add caption
-      text(34.4, 0, paste('Ea.nlme = ', round(result.nlme[wNLME, 'E'],2)), pos=2, col=2)
-      text(34.4, umax*0.15,paste('Ea.lme = ', round( result.lme[wLME, 2],2)), pos=2, col=3)
-      text(34.4, umax*0.3, paste('Ea.lfe = ', round( coef(LFE)[2], 2)), pos=2, col='blue')
+      #text(34.4, 0, paste('Ea.nlme = ', round(result.nlme[wNLME, 'E'],2)), pos=2, col=2)
+      #text(34.4, umax*0.15,paste('Ea.lme = ', round( result.lme[wLME, 2],2)), pos=2, col=3)
+      text(34.4, umax*0.3, paste('Eintra = ', round( coef(LFE)[2], 2)), pos=2, col='blue')
   }
   #Add figure caption
   mtext(caption, side = 1, line = 0, outer = T, adj = 0)
   dev.off()
 }
 
-plot_taxon(phydat3, phypdffile, 'Fig. S1. Growth rate versus temperature plots for each autotrophic taxon')
+plot_taxon(PEuk2, phypdffile, 'Fig. S1. Growth rate versus temperature plots for each autotrophic taxon')
 plot_taxon(zoodat2, zoopdffile, 'Fig. S2. Growth rate versus temperature plots for each heterotrophic taxon')
