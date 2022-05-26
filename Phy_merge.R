@@ -1,8 +1,12 @@
-#### 1) Merge two phytoplankton datasets from Chen & Laws L&O (2017) and Kremer et al. L&O (2017) ####
-setwd('~/OneDrive/Kremer')
-#### Read in data:
-Kdat <- read.csv('lno10523-sup-0008-suppinfo8.csv')
-Cdat <- read.csv('Phyto_19Mar2020.csv')
+## This script  merges two phytoplankton datasets from Chen & Laws L&O (2017; with some additions) and Kremer et al. L&O (2017) ####
+
+#Read in data:
+
+#Kremer et al. (2017) data
+Kdat <- read.csv('Kremer2017.csv')
+
+#Chen and Laws (2017) data with some additions
+Cdat <- read.csv('Chen2017.csv')
 Cdat <- Cdat[!is.na(Cdat$ID),]
 Cdat <- Cdat[!is.na(Cdat$Genus),]
 Cdat <- Cdat[!is.na(Cdat$Temp),]
@@ -34,12 +38,16 @@ for (i in 1:nrow(Cdat)){
     newdat[i, 'Temperature'] <- Cdat[i,'Temp']
     newdat[i, 'Growth']      <- Cdat[i,'Growth']
     newdat[i, 'Volume']      <- Cdat[i,'Volume']
+    newdat[i, 'Lon']         <- Cdat[i,'Lon']
+    newdat[i, 'Lat']         <- Cdat[i,'Lat']
 }
 
+#Remove NA values in the Kremer dataset
 Kdat      <- Kdat[!is.na(Kdat$genus),]
 Kdat      <- Kdat[!is.na(Kdat$temperature),]
 Kdat      <- Kdat[!is.na(Kdat$r),]
 
+######## Find duplicates between the two datasets
 Kdat$frep <- FALSE
 Kdat$Kind <- NA
 for (i in 1:nrow(Kdat)){
@@ -53,6 +61,7 @@ for (i in 1:nrow(Kdat)){
            }
    }
 }
+######
 
 IDs <- unique(Kdat$isolate.code)
 k   <- nrow(newdat[!is.na(newdat$ID),])
@@ -60,8 +69,10 @@ for (i in 1:length(IDs)){
     cff  <- Kdat[Kdat$isolate.code == IDs[i], ]
     Ncff <- nrow(cff)
     cff[is.na(cff$frep),'frep'] <- FALSE
+    
+    #Merge the Kremer dataset into Chen dataset and keep the format same
     if (!any(cff$frep)){
-        newdat[(k+1):(k+Ncff), 'ID']  <- paste0('Kremer',cff[, 'isolate.code']) 
+        newdat[(k+1):(k+Ncff), 'ID']          <- paste0('Kremer',cff[, 'isolate.code']) 
         newdat[(k+1):(k+Ncff), 'Group']       <- as.character(cff[,'group'])
         newdat[(k+1):(k+Ncff), 'Genus']       <- as.character(cff[,'genus'])
         newdat[(k+1):(k+Ncff), 'Species']     <- paste(as.character(cff[,'genus']), as.character(cff[,'species']))
@@ -72,11 +83,12 @@ for (i in 1:length(IDs)){
     }
     k <- k + Ncff
 }
-newdat$ID <- as.factor(newdat$ID)
-newdat   <- newdat[!is.na(newdat$ID),]
-newdat$Group <- as.factor(newdat$Group)
+newdat$ID      <- as.factor(newdat$ID)
+newdat         <- newdat[!is.na(newdat$ID),]
+newdat$Group   <- as.factor(newdat$Group)
 newdat$Habitat <- as.factor(newdat$Habitat)
 
+###Harmonize the names of habitat and functional group
 newdat$Habitat[newdat$Habitat == 'freshwater']   <- 'Freshwater'
 newdat$Habitat[newdat$Habitat == 'marine']       <- 'Marine'
 newdat$Group[newdat$Group   == 'Cyanobacteria']  <- 'Cyan'
@@ -84,5 +96,4 @@ newdat$Group[newdat$Group   == 'Diatoms']        <- 'Diatom'
 newdat$Group[newdat$Group   == 'Greens']         <- 'Green'
 newdat$Group[newdat$Group   == 'Dinoflagellates']<- 'Dino'
 
-save(newdat, file = 'NEWphy24Mar2020.Rdata')
-
+save(newdat, file = 'Merged_PHY.Rdata')
