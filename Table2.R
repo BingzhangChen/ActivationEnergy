@@ -1,16 +1,10 @@
-OS <-  Sys.info()[['sysname']]
-if (OS == 'Windows'){
-  prefix <- "C:/Users/Dell/OneDrive - University of Strathclyde/"
-}else{
-  prefix <- "~/OneDrive/"
-}
-
-setwd(paste0(prefix,"Kremer"))
-library(foreach)
+library(foreach) #version 
 library(nlme)
 
 source('prep_data.R')
 
+######The main function that separates within-taxa and across-taxa thermal sensitivities
+#following Eq. 9 and 14 in Supplement 1 (see also Eq. 1 and 2 in the main text).
 decomp <- function(oridat, remove.nonpositive = T, epsilon=0.01){
   
   #Weighed Covariance function
@@ -166,7 +160,7 @@ decomp <- function(oridat, remove.nonpositive = T, epsilon=0.01){
               EappCal    = Eapp))
 } 
 
-#Use bootstrapping to estimate SE
+#Use bootstrapping to estimate standard error of the above estimates
 boot <- function(dat, Nrep = 100){
   result <- foreach(i=1:Nrep, .combine='rbind') %do% {
     
@@ -185,18 +179,19 @@ boot <- function(dat, Nrep = 100){
   return(list(mean=MEAN, se=SE))
 }
 
-#OLS regression by considering cell size (Table S3)
+##OLS regression by considering cell size to generate Table S3
 OLSsize <- function(dat){
   sdat <- dat %>% subset(Growth > 0)
   Z <- lm(log(Growth) ~ X + log(Volume), sdat)
-  
   Z <- summary(Z)
-  return(list(N=sum(Z$df[1:2]), R2=Z$r.squared, 
-         Eapp   = coefficients(Z)[2,1],
-         SE_Eapp= coefficients(Z)[2,2],
-         alpha  = coefficients(Z)[3,1],
+  return(list(N   = sum(Z$df[1:2]),
+             R2   = Z$r.squared, 
+         Eapp     = coefficients(Z)[2,1],
+         SE_Eapp  = coefficients(Z)[2,2],
+         alpha    = coefficients(Z)[3,1],
          SE_alpha = coefficients(Z)[3,2]))
 }
+##################
 
 PEuk_decomp       <- decomp(PEuk2) #Autotrophic protists
 PEuk_decomp_boot  <-   boot(PEuk2) #Estimate the SE of each estimate by bootstrapping
@@ -206,13 +201,12 @@ PEuk_nlme         <- Ea_nlme(PEuk2)#Estimate Ea based on nonlinear mixed-effect 
 PEuk3             <- PEuk2 %>% subset(XoptL >= min(zoodat2$XoptL))
 PEuk3_decomp      <- decomp(PEuk3)
 
-OLSsize(PEuk2) #Check the size effect on Eapp
+OLSsize(PEuk2) #Check the size effect on Eapp of eukaryotic autotrophic protists
 
 #Cyanobacteria
 Cyn_decomp       <- decomp(Cyn2)
 Cyn_decomp_boot  <-   boot(Cyn2) #Estimate the SE of each estimate by bootstrapping
 Cyn_nlme         <- Ea_nlme(Cyn2)#Estimate Ea based on nonlinear mixed-effect model
-
 
 #MicroZooplankton
 mzoo_decomp      <- decomp(zoodat2)
@@ -228,7 +222,7 @@ Ea_insect_boot <- boot(Insect2)
 Ea_HBac   <- decomp(HBac2)
 Ea_HBac_boot <- boot(HBac2)
 
-#Plot each taxon(Fig. S1 and S2)
+##Plot the temperature responses of each taxon(Fig. S1 and S2)
 TODAY      <- Sys.Date()
 phypdffile <- paste0('phyto_bytaxon_linear',    TODAY, '.pdf')
 zoopdffile <- paste0('microzoo_bytaxon_linear', TODAY, '.pdf')

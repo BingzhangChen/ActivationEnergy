@@ -36,9 +36,7 @@ culldata <- function(newdat){
     
     PHYu <- ddply(newdat, .(ID), summarize,
                          ID       = ID[1],
-                     #    Habitat  = Habitat[1],
                          Group    = Group[1],
-                     #    Genus    = Genus[1],
                          Species  = Species[1]
                      #    lnVolume = mean(log(Volume), na.rm=T)
                   )
@@ -99,9 +97,8 @@ culldata <- function(newdat){
     return(list(oridat = newdat, newdat = newdat2))
 }
 
-#Original phytoplankton data
-#source('Phy_merge.R')
-load('NEWphy24Mar2020.Rdata')
+#Process phytoplankton data (autotrophic protists)
+load('Merged_PHY.Rdata')
 phydat       <- culldata(newdat)
 
 #Final phyto data used for analysis
@@ -116,38 +113,12 @@ PEuk2        <- subset(phydat2, Group != 'Cyan')  #Eukaryotic phytoplankton afte
 Cyn          <- phydat[ phydat$Group == 'Cyan',]  #All prokaryotic phyto. data
 Cyn2         <- subset(phydat2, Group== 'Cyan')
 
-#Microzooplankton data from David
-dat <- read.csv('Microzoo_23Mar2020.csv')
+#Processing heterotrophic protist data provided by David J. S. Montagnes
+dat <- read.csv('HProtist.csv')
 dat[dat$Habitat == 'freshwater','Habitat'] <- 'Freshwater'
-zoodat         <- culldata(dat)
-zoodat2        <- zoodat$newdat  #Final oridat of zoo used for analysis
-zoodat         <- zoodat$oridat
-
-#The microzoo data in Chen & Laws 2017
-# dat2017 <- read.csv('../Global_PP/microz.csv')
-# names(dat2017)[names(dat2017) == 'u']      <- 'Growth' 
-# names(dat2017)[names(dat2017) == 'Temp']   <- 'Temperature'
-# names(dat2017)[names(dat2017) == 'Classification'] <- 'Group'
-# names(dat2017)[names(dat2017) == 'Strain'] <- 'ID' 
-# dat2017 <- subset(dat2017, Habitat == 'Marine')
-# dat2017 <- culldata(dat2017)
-# dat2017 <- dat2017$newdat
-
-#The Algae data in Wang et al. 2019
-# wang_Algae2019 <- read.csv('Wang2019Algae.csv')
-# wang_Algae2019$ID <- factor(wang_Algae2019$ID)
-# wang_Algae2019$Temperature <- wang_Algae2019$Temperature - T0 
-# wangAlgae <- culldata(wang_Algae2019)
-# wangAlgae <- wangAlgae$newdat
-# 
-# #Using nls following Wang et al. (2019)
-# wang_Algae2019$X <- T.K(wang_Algae2019$Temperature)
-# 
-# #The microzoo data in Wang et al. 2019
-# wang2019 <- read.csv('Wang2019Protist.csv')
-# wang2019$Temperature <- wang2019$Temperature - T0 
-# wang <- culldata(wang2019)
-# wang <- wang$newdat
+zoodat       <- culldata(dat)
+zoodat2      <- zoodat$newdat  #Final oridat of zoo used for analysis
+zoodat       <- zoodat$oridat
 
 #Insect data from Rezende and Bozinovic (2019)
 Insect <- 'Insects.csv'
@@ -159,7 +130,7 @@ Insect1      <- culldata(Insect)
 Insect2      <- Insect1$newdat
 
 #Bacteria data from Smith et al. NC 2019
-Bac <- read.csv('~/OneDrive/hotterbetterprokaryotes/Data/database.csv')
+Bac <- read.csv('Smith2019Bac.csv')
 
 #Restrict data to only Specific Growth rate
 Bac <- Bac %>% subset(StandardisedTraitName == 'Specific Growth Rate'
