@@ -30,9 +30,13 @@ All the codes are written in R 4.2.0. The following R packages are used: **forea
 
 ## How to run the code
 
-1.  Download the source code and data.
+1.  Download the source code and data. The most updated code and data are available at <https://github.com/BingzhangChen/ActivationEnergy.git> which can be obtained either by using git clone or directly downloaded from Github.
 
-2.  
+2.  To run the main analysis (**Table 2** in the main paper), run **Table2.R** in R. This script also generates Fig. S1 and S2.
+
+3.  To reproduce **Fig. 1** in the main paper, run **Fig1Eapp.R**.
+
+4.  To reproduce **Fig. 2** in the main paper, run **Fig2.R**.
 
 ## Data files
 
@@ -44,16 +48,15 @@ All the codes are written in R 4.2.0. The following R packages are used: **forea
 
 4.  Chen2017.csv: phytoplankton data of growth rate \~ temperature expanded from Chen and Laws (2017) used for generating Merged_PHY.Rdata. It is not needed for the main analysis. The **Reference** column indicates the original reference. The **ID** column indicates the ID of an independent temperature-growth experiment. The columns of **Phylum**, **Class**, **Order**, **Family**, **Genus**, **Species** indicate the hierarchical taxonomic classification of the taxa. **Habitat** indicates whether it is a freshwater or marine species.**Temp** indicates the experimental temperature (degree in Celsius). **Volume** indicates the log10 cell volume (unit: $\mu m^3$) of the taxa. **Growth** indicates the measured *per capita* growth rate (unit: $d^{-1}$). **Lat** and **Lon** indicate the latitude and longitude of the location where the taxa were isolated.
 
-5. Insects.csv: insect data of per capita growth rate \~ temperature from Rezende and Bozinovic (2019). The **Species** column indicates the species name of the taxa. The **ID** column indicates the ID of an independent temperature-growth experiment. **Temperature** indicates the experimental temperature (degree in Celsius). **Performance** indicates the measured *per capita* growth rate (unit: $d^{-1}$).
+5.  Insects.csv: insect data of per capita growth rate \~ temperature from Rezende and Bozinovic (2019). The **Species** column indicates the species name of the taxa. The **ID** column indicates the ID of an independent temperature-growth experiment. **Temperature** indicates the experimental temperature (degree in Celsius). **Performance** indicates the measured *per capita* growth rate (unit: $d^{-1}$).
 
-6. Smith2019Bac.csv: bacterial data of per capita growth rate \~ temperature from Smith et al. (2019). The **StandardisedTraitName** column indicates Standardised name of trait after conversion to SI units. The **StandardisedTraitValue** indicates Trait value after standardisation to SI units.	**StandardisedTraitUnit** indicates.	**AmbientTemp** indicates .	**AmbientTempUnit** indicates .	**Latitude** indicates.	**Longitude** indicates.	**ConKingdom** indicates.	**ConPhylum** indicates.	**ConClass** indicates.	**ConOrder** indicates.	**ConFamily** indicates.	**ConGenus** indicates.	**ConSpecies**	indicates. **ConTrophic** indicates.	**ConThermy** indicates.	**ConTemp** indicates.	**ConTempUnit**	**Citation**	**DOI**.
-
+6.  Smith2019Bac.csv: bacterial data of per capita growth rate \~ temperature from Smith et al. (2019). The **StandardisedTraitName** column indicates Standardised name of trait after conversion to SI units. The **StandardisedTraitValue** indicates Trait value after standardisation to SI units. **StandardisedTraitUnit** indicates Units of the standardised trait. **AmbientTemp** indicates Temperature at trait recording. **AmbientTempUnit** indicates Units the temperature was measured in. **Latitude** indicates Latitude of the location. **Longitude** indicates Longitude of the location. **ConKingdom** indicates the taxon's kingdom. **ConPhylum** indicates the taxon's phylum. **ConClass** indicates the taxon's class. **ConOrder** indicates the taxon's order. **ConFamily** indicates the taxon's family. **ConGenus** indicates the taxon's genus. **ConSpecies** indicates the taxon's species. **ConTrophic** indicates the taxon's trophic mode (autotrophic vs. heterotrophic). **ConThermy** indicates whether the taxon is ecotothermic or endothermic. **ConTemp** indicates the temperature of the taxon at trait measurement. **ConTempUnit** indicates units of the temperature recording. **Citation** indicates reference for the original trait recording and **DOI** indicates its DOI.
 
 7.  Data_source_references.docx: the word document containing the references lists of the data sources of the autotrophic and heterotrophic protists.
 
 ## R scripts
 
-1.  prep_data.R: R script used for reading the source data files ('Microzoo_23Mar2020.csv' & 'NEWphy24Mar2020.Rdata') and choose appropriate data that fit the selection criteria (see the main manuscript for details). It also calculates the relevant information such as mean Boltzmann temperature for each taxon.
+1.  prep_data.R: R script used for reading the source data files (**HProtist.csv** and **Merged_PHY.Rdata**) and choose appropriate data that fit the selection criteria (see the main manuscript for details). It also calculates the relevant information such as mean Boltzmann temperature for each taxon.
 
 2.  Phy_merge.R: R script to merge two phytoplankton datasets from Chen & Laws (2017) and Kremer et al. (2017) and remove the duplicates.
 
@@ -63,13 +66,30 @@ All the codes are written in R 4.2.0. The following R packages are used: **forea
 
 5.  Table2.R: R script to generate Table 2 in the main paper. It also contains the code to generate Table S1-S3, Fig. S1 and S2 in the supplements.
 
+## Other supplemental materials
+
+1.  Supplement1.pdf: Derivations of Eq. 1 and Eq. 2 in the main text and additional analysis results of autotrophic and heterotrophic prokaryotes as well as insects (Table S1 and S2).
+
+2.  Supplement2.docx: Estimations of $E_{app}$ by incorporating cell size (Table S3).
+
+3. TableS4_Autotrophic_protists_summary.pdf: Summaries of autotrophic protists used in this study (Table S4).
+
+4. TableS5_Heterotrophic_protists_summary.pdf: Summaries of heterotrophic protists used in this study (Table S5).
+
+5. AProtist_bytaxon_linear.pdf: Individual fits of growth rate ~ temperature of each taxon of autotrophic protists using Ordinary Least-Square linear regression models.
+
+6. HProtist_bytaxon_linear.pdf: Individual fits of growth rate ~ temperature of each taxon of heterotrophic protists using Ordinary Least-Square linear regression models.
+
+## Funding
+
+This study has been supported by Southern Marine Science and Engineering Guangdong Laboratory (Guangzhou) (SMSEGL20SC02), a FILAMO mobility grant provided by the University of Bergen, Norway, a Leverhulme Trust Research Project Grant (RPG-2020-389), and the National Science Foundation, Biological Oceanography OCE-1736635.
+
 ## References
 
 1.  Chen, B., and E. A. Laws. 2017. Is there a difference of temperature sensitivity between marine phytoplankton and heterotrophs? Limnology and Oceanography 62:806--817.
 
 2.  Kremer, C. T., M. K. Thomas, and E. Litchman. 2017. Temperature- and size-scaling of phytoplankton population growth rates: Reconciling the Eppley curve and the metabolic theory of ecology. Limnology and Oceanography 62:1658--1670.
 
-3. Rezende, E. L., and F. Bozinovic. 2019. Thermal performance across levels of biological organization. Philosophical Transactions of the Royal Society B: Biological Sciences 374:20180549.
+3.  Rezende, E. L., and F. Bozinovic. 2019. Thermal performance across levels of biological organization. Philosophical Transactions of the Royal Society B: Biological Sciences 374:20180549.
 
-4. Smith, T. P., T. J. H. Thomas, B. García-Carreras, S. Sal, G. Yvon-Durocher, T. Bell, and S. Pawar. 2019. Community-level respiration of prokaryotic microbes may rise with global warming. Nature Communications 10:5124.
- 
+4.  Smith, T. P., T. J. H. Thomas, B. García-Carreras, S. Sal, G. Yvon-Durocher, T. Bell, and S. Pawar. 2019. Community-level respiration of prokaryotic microbes may rise with global warming. Nature Communications 10:5124.
