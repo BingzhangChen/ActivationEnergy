@@ -26,7 +26,7 @@ All the data and codes are covered by the MIT license. Please see the **LICENSE*
 
 ## Software and packages
 
-All the codes are written in R 4.2.0. The following R packages are used: **foreach**, **nlme**, **plyr**, **dplyr**,
+All the codes are written in R 4.2.0. The following R packages are used: **foreach** (version 1.5.2), **nlme** (version 3.1-157), **plyr** (version 1.8.7), **dplyr** (version 1.0.9). The  detailed package versions and environment can be found in the file **Session_Info.png**.  
 
 ## How to run the code
 
@@ -72,13 +72,15 @@ All the codes are written in R 4.2.0. The following R packages are used: **forea
 
 2.  Supplement2.docx: Estimations of $E_{app}$ by incorporating cell size (Table S3).
 
-3. TableS4_Autotrophic_protists_summary.pdf: Summaries of autotrophic protists used in this study (Table S4).
+3.  TableS4_Autotrophic_protists_summary.pdf: Summaries of autotrophic protists used in this study (Table S4).
 
-4. TableS5_Heterotrophic_protists_summary.pdf: Summaries of heterotrophic protists used in this study (Table S5).
+4.  TableS5_Heterotrophic_protists_summary.pdf: Summaries of heterotrophic protists used in this study (Table S5).
 
-5. AProtist_bytaxon_linear.pdf: Individual fits of growth rate ~ temperature of each taxon of autotrophic protists using Ordinary Least-Square linear regression models.
+5.  AProtist_bytaxon_linear.pdf: Individual fits of growth rate \~ temperature of each taxon of autotrophic protists using Ordinary Least-Square linear regression models.
 
-6. HProtist_bytaxon_linear.pdf: Individual fits of growth rate ~ temperature of each taxon of heterotrophic protists using Ordinary Least-Square linear regression models.
+6.  HProtist_bytaxon_linear.pdf: Individual fits of growth rate \~ temperature of each taxon of heterotrophic protists using Ordinary Least-Square linear regression models.
+
+7. Session_Info.png: the output of the command **sessionInfo()** showing the detailed software package versions as well as dependencies.
 
 ## Funding
 
