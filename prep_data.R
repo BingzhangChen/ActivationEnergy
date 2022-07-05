@@ -1,5 +1,5 @@
-library(plyr)
-library(dplyr)
+library(plyr) #Version 1.8.7
+library(dplyr) #Version 1.0.9
 kb       <- 8.62e-5
 Tref     <- 15
 T0       <- 273.15

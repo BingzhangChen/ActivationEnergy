@@ -1,3 +1,4 @@
+#Function to convert temperature in Celcius to Kelvin
 T.K <- function(x, Tref = 15,kb=8.62E-5) 1/((Tref+273)*kb) - 1/((x + 273)*kb)
 
 #Plot four typical linear growth~temperature relationships and the fitness landscape under a given environmental temperature
@@ -14,7 +15,7 @@ b0   <- log(2)
 b    <- b0 - Ea * theta
 ym   <- theta*Ea + b 
 
-pdf('Text/Fig1EappEinter.pdf', height=4, width=8)
+pdf('Fig1EappEinter.pdf', height=4, width=8)
 op <- par(font.lab = 1,
            family  = "serif",
            cex.lab = 1.9,

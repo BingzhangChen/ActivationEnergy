@@ -1,6 +1,7 @@
 #Load prep.R
 source('prep_data.R')
 set.seed(10)
+
 #Plot Ea examples and distributions of Ea
 #Randomly select n (n = 8) taxa to plot Ea
 YLIM <- c(-6, 2.2)
@@ -168,8 +169,8 @@ plot_EL <- function(oridat, XLAB = '', plot.legend = FALSE){
       text(-2.2, -0.68, bquote(T[opt]), cex=.6, pos=4)   
   }
 }
-TODAY   <- Sys.Date()
-fname   <- paste0('Text/Fig2OLS_both',TODAY,'.pdf')
+
+fname <- paste0('Fig2OLS_both.pdf')
 pdf(fname, width = 7, height = 12)
 par(font.lab  = 1,
     family    = "serif",
@@ -207,13 +208,11 @@ points(zoodat[zoodat$right,]$X, log(zoodat[zoodat$right,]$Growth), pch = 16, col
 zoo.lm0 <- lm(log(Growth) ~ X, zoodat2[zoodat2$Growth > 0, ])
 abline(zoo.lm0)
 
-#text(-2.6, 1.8, pos=4, expression(bold(B)*') Heterotrophs '*italic(E[app])))
 mtext(expression(bold(B)*') Heterotrophs '*italic(E[app])), side=3, adj=0)
 
 par(fig = c(0, .5, 0.5, .75), new = T)  
 plot_Ea_example(PEuk2, XLAB = expression(paste(italic(x) ) ) )
 
-#text(-2.6, 1.8, pos=4, expression(bold(C)*') Autotrophs '*italic(E[a])))
 mtext(expression(bold(C)*') Autotrophs '*italic(E[intra])), adj=0)
 par(fig = c(0.22,.48, 0.53, .7), new = T)  #Plot inset
 par(mgp = c(1,.1,0))
@@ -231,7 +230,6 @@ plot_Ea_hist(zoodat2)
 par(mgp=c(2.2,1,0))
 par(fig = c(0, 0.5, 0.25, 0.5), new = T)  
 plot_Einter(PEuk2, XLAB = expression(paste(italic(bar(x)))) )
-#text(-2.6, 1.8, pos=4, expression(bold(E)*') Autotrophs '*italic(E[e])))
 mtext(expression(bold(E)*') Autotrophs '*italic(E[inter])), adj=0)
 
 par(fig = c(0.5, 1, 0.25, 0.5), new = T)  
@@ -242,34 +240,11 @@ mtext(expression(bold(F)*') Heterotrophs '*italic(E[inter])), adj=0)
 par(fig = c(0, 0.5, 0, 0.25), new = T)  
 plot_EL(PEuk2, XLAB = expression(paste(italic(x[m])))  )
 
-#text(-2.6, 1.8, pos=4, expression(bold(E)*') Autotrophs '*italic(E[e])))
 mtext(expression(bold(G)*') Autotrophs '*italic(E[L])), adj=0)
 
 par(fig = c(0.5, 1, 0, 0.25), new = T)  
 plot_EL(zoodat2, XLAB = expression(paste(italic(x[m])))    ) 
 
-#text(-2.6, 1.8, pos=4, expression(bold(F)*') Heterotrophs '*italic(E[e])))
 mtext(expression(bold(H)*') Heterotrophs '*italic(E[L])), adj=0)
 
 dev.off()
-
-#Plot bacteria
-#Autotrophic bacteria
-# plot(Cyn2$X, log(Cyn2$Growth), pch = 16,  cex=.5,
-#      # xlim = c(-2.5,6),
-#      # ylim = c(-6, 6),
-#      xlab = expression(paste('1/'*italic(k[b])*'(1/'*italic(T[r])*' - 1/'*italic(T)*') or '*italic(x))),
-#      ylab = expression(paste(italic(ln)*' growth rate ') ) )
-# points(Cyn[Cyn$right,]$X, log(Cyn[Cyn$right,]$Growth), pch = 16, col = 'gray', cex=.5)
-# z <- lm(log(Growth) ~ X, Cyn2[Cyn2$Growth > 0, ])
-# abline(z)
-# 
-# #Heterotrophic bacteria
-# plot(HBac2$X, log(HBac2$Growth), pch = 16,  cex=.5,
-#     # xlim = c(-2.5,6),
-#     # ylim = c(-6, 6),
-#      xlab = expression(paste('1/'*italic(k[b])*'(1/'*italic(T[r])*' - 1/'*italic(T)*') or '*italic(x))),
-#      ylab = expression(paste(italic(ln)*' growth rate ') ) )
-# points(HBac[HBac$right,]$X, log(HBac[HBac$right,]$Growth), pch = 16, col = 'gray', cex=.5)
-# z <- lm(log(Growth) ~ X, HBac2[HBac2$Growth > 0, ])
-# abline(z)

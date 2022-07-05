@@ -1,10 +1,12 @@
-library(foreach) #version 
-library(nlme)
+library(foreach) #version 1.5.2
+library(nlme) #version 3.1-157
 
 source('prep_data.R')
 
 ######The main function that separates within-taxa and across-taxa thermal sensitivities
 #following Eq. 9 and 14 in Supplement 1 (see also Eq. 1 and 2 in the main text).
+#Caution: Ea is used throughout in the following code to represent intra-specific activation energy
+#which should be Eintra in the main manuscript and Supplement 1.
 decomp <- function(oridat, remove.nonpositive = T, epsilon=0.01){
   
   #Weighed Covariance function
@@ -17,6 +19,7 @@ decomp <- function(oridat, remove.nonpositive = T, epsilon=0.01){
     return(sum(w*(x-xbar)*(y-ybar)))
   }
   
+  #How to deal with zero growth rate; the default is to remove all non-positive values
   if (remove.nonpositive) {
     oridat <- oridat %>% subset(Growth > 0)
   }else{
@@ -24,8 +27,10 @@ decomp <- function(oridat, remove.nonpositive = T, epsilon=0.01){
   }
   
   Eapp       <- numeric(9L)  #Includes both terms of Einter equation and EL equation
-  oridat$eps <- NA
-  oridat$xi  <- NA
+  oridat$eps <- NA #Residual in Eqn. 1 (Supplement 1)
+  oridat$xi  <- NA #Residual in Eqn. 12 (Supplement 1)
+  
+  #Extract each taxon (XoptL is the optimal temperature)
   unidat     <- plyr::ddply(oridat, .(ID), summarize,
                             ID       = ID[1],
                             Species  = Sp[1],
@@ -36,21 +41,31 @@ decomp <- function(oridat, remove.nonpositive = T, epsilon=0.01){
 
   for (i in 1:nrow(unidat)){
     code              <- unidat$ID[i]
+    
+    #Pick up the data for the ith taxon
     tmp               <- oridat[oridat$ID == code,]
     unidat[i, 'mj'  ] <- nrow(tmp)
     unidat[i, 'Tbar'] <- mean(tmp$X)
     unidat[i, 'var1'] <- sum((tmp$X - GrandX)**2)
     
-    #Calculate y_{m,j} and E_{a,j} 
-    tmp$X1            <- tmp$X - tmp$XoptL[1]
+    #Calculate beta_{j} and E_{intra,j} 
     LM1               <- lm(log(Growth) ~ X, tmp)
+    
+    #LM2 is for computing y_{m,j} (see Eqn. 12 in Supplement 1) 
+    tmp$X1            <- tmp$X - tmp$XoptL[1]
     LM2               <- lm(log(Growth) ~ X1, tmp)
+    
+    #Obtain beta_{j} in Eqn. 2 (Supplement 1)
     unidat[i, 'bj']   <- as.numeric(coef(LM1)[1])
-    unidat[i, 'Ea']   <- as.numeric(coef(LM2)[2])#Ea is the same for LM1 and LM2
+    unidat[i, 'Ea']   <- as.numeric(coef(LM2)[2]) #Eintra (Ea) is the same for LM1 and LM2
+    
+    #Obtain y_{m,j} in Eqn. 12 (Supplement 1)
     unidat[i, 'ym']   <- as.numeric(coef(LM2)[1])
 
-    #Add epsilon to oridat
+    #Add epsilon to oridat (Eqn. 1)
     oridat[oridat$ID == code, 'eps'] <- LM1$residuals
+    
+    #Add residuals (xi)  to oridat (Eqn. 12)
     oridat[oridat$ID == code, 'xi']  <- LM2$residuals
   }
  
@@ -74,7 +89,6 @@ decomp <- function(oridat, remove.nonpositive = T, epsilon=0.01){
   
   #variance of optimal temperature  with unequal probabilities
   #First, calculate mean Xm
-  
   Mean_xm     <- sum(p*unidat$XoptL)
   VARxm       <- sum(p*(unidat$XoptL - Mean_xm)^2)
   
@@ -85,25 +99,22 @@ decomp <- function(oridat, remove.nonpositive = T, epsilon=0.01){
   unidat$EaXm   <- unidat$Ea * unidat$XoptL
   COV_Eaxm_xbar <- wcov(unidat$EaXm, unidat$Tbar, p)
   
-  #correlation between slope (Ea) and intercept (bj)
-  #rho_Ea_Xbar <- cor(unidat$bj, unidat$Ea, method='spearman')       
-  
-  #First term
+  #First term of Eqn. 9 and Eqn. 14
   Eapp[1] <- sum(unidat$Ea * unidat$var1)/M/VARx
 
-  #2nd term
+  #3rd term of Eqn. 14
   Eapp[2] <- -COV_Eaxm_xbar/VARx
   
   #Calculate Einter for phytoplankton
   Einter <- lm(bj ~ Tbar,  unidat, weights = p)  #weighed linear regression
   
-  #Calculate EL for phytoplankton
+  #Calculate EL for phytoplankton (Eqn. 14)
   EL <- lm(ym ~ XoptL, unidat, weights = p)  #weighed linear regression
   
-  #Obtain residuals (nu) for EL
+  #Obtain residuals (nu) for EL (Eqn. 11)
   nu <- EL$residuals
   
-  #Obtain residuals (beta) for Einter
+  #Obtain residuals (beta_{j}) for Einter (Eqn. 2)
   beta <- Einter$residuals
 
   #check whether mean of weighed residuals is 0
@@ -115,29 +126,29 @@ decomp <- function(oridat, remove.nonpositive = T, epsilon=0.01){
   # weighed variance of x
   # VARxbar1 <- wcov(unidat$Tbar, unidat$Tbar, p) confirms the calculation above
   
-  #Third term
+  #2nd term of Eqn. 14
   Eapp[3]  <- EL * COV_xm_xbar/VARx
   
-  #4th term
-  COVEXbar <-  wcov(unidat$Ea, unidat$Tbar, p) #weighed covariance between Ea and xbar 
+  #4th term of Eqn. 14
+  COVEXbar <-  wcov(unidat$Ea, unidat$Tbar, p) #weighed covariance between Ea (Eintra) and xbar 
   Eapp[4]  <-  GrandX  * COVEXbar  / VARx
 
-  #5th term
+  #5th term of Eqn. 14
   COVnuxbar   <- wcov(nu, unidat$Tbar, p)
   Eapp[5]     <- COVnuxbar/VARx
   
-  #6th term 
+  #6th term of Eqn. 14
   COVXi_X  <- cov(oridat$X, oridat$xi)
   Eapp[6]  <- COVXi_X / VARx
   
-  #7th term (EinterVar(Xbar)/Var(x))
+  #2nd term of Eqn. 9 (EinterVar(Xbar)/Var(x))
   Eapp[7]  <- Einter * VARxbar /VARx
     
-  #8th term (Cov(beta, xbar)/Var(x))
+  #4th term of Eqn. 9 (Cov(beta, xbar)/Var(x))
   COVbetaxbar <- wcov(beta, unidat$Tbar, p)
   Eapp[8]     <- COVbetaxbar/VARx
   
-  #9th term (Cov(eps, X)/Var(x))
+  #5th term of Eqn. 9 (Cov(eps, X)/Var(x))
   COVepsX  <- cov(oridat$X, oridat$eps)
   Eapp[9]  <- COVepsX / VARx
   
@@ -179,7 +190,7 @@ boot <- function(dat, Nrep = 100){
   return(list(mean=MEAN, se=SE))
 }
 
-##OLS regression by considering cell size to generate Table S3
+#OLS regression by considering cell size to generate Table S3
 OLSsize <- function(dat){
   sdat <- dat %>% subset(Growth > 0)
   Z <- lm(log(Growth) ~ X + log(Volume), sdat)
@@ -195,60 +206,39 @@ OLSsize <- function(dat){
 
 PEuk_decomp       <- decomp(PEuk2) #Autotrophic protists
 PEuk_decomp_boot  <-   boot(PEuk2) #Estimate the SE of each estimate by bootstrapping
-PEuk_nlme         <- Ea_nlme(PEuk2)#Estimate Ea based on nonlinear mixed-effect model
 
 #Check if Einter removing polar autotrophic protists
 PEuk3             <- PEuk2 %>% subset(XoptL >= min(zoodat2$XoptL))
 PEuk3_decomp      <- decomp(PEuk3)
-
 OLSsize(PEuk2) #Check the size effect on Eapp of eukaryotic autotrophic protists
 
 #Cyanobacteria
 Cyn_decomp       <- decomp(Cyn2)
 Cyn_decomp_boot  <-   boot(Cyn2) #Estimate the SE of each estimate by bootstrapping
-Cyn_nlme         <- Ea_nlme(Cyn2)#Estimate Ea based on nonlinear mixed-effect model
 
 #MicroZooplankton
 mzoo_decomp      <- decomp(zoodat2)
 mzoo_decomp_boot <-   boot(zoodat2)
-mzoo_nlme        <- Ea_nlme(zoodat2)
 OLSsize(zoodat2)
 
 #Insect data in Rezende and Bozinovic (2019)
-Ea_insect <- decomp(Insect2)
+Ea_insect      <- decomp(Insect2)
 Ea_insect_boot <- boot(Insect2)
 
-#Heterotrophic bacteria
-Ea_HBac   <- decomp(HBac2)
+#Heterotrophic bacteria in Smith et al. (2019)
+Ea_HBac      <- decomp(HBac2)
 Ea_HBac_boot <- boot(HBac2)
 
 ##Plot the temperature responses of each taxon(Fig. S1 and S2)
-TODAY      <- Sys.Date()
-phypdffile <- paste0('phyto_bytaxon_linear',    TODAY, '.pdf')
-zoopdffile <- paste0('microzoo_bytaxon_linear', TODAY, '.pdf')
+phypdffile <- 'AProtist_bytaxon_linear.pdf'
+zoopdffile <- 'HProtist_bytaxon_linear.pdf'
 
 plot_taxon <- function(dat, filename, caption = ''){
 
   dat$ID <- factor(dat$ID)
   
-  #NLME
-  NLME <- nlme(
-      Growth ~ A * exp(E * X),
-      data   = dat,
-      fixed  = A + E ~ 1,
-      random = A + E ~ 1,
-      groups = ~ ID,
-      start  = c(A = 1, E = 0.65),
-      method = 'REML')
-   
-  result.nlme <- coefficients(NLME)
   sdat   <- dat %>% subset(Growth > 0)
   
-  #Linear mixed-effect model
-  LME    <- lme(log(Growth) ~ X, 
-                  random = ~ 1 + X|ID,
-                  data   = sdat, method = 'REML')
-  result.lme <- coefficients(LME)
   Ntaxon <- length(levels(dat$ID))
     
   YLAB <- expression(paste("Growth rate (" * d ^ -1 * ")"))
@@ -276,16 +266,9 @@ plot_taxon <- function(dat, filename, caption = ''){
       minx <- min(tmp$Temperature)
       maxx <- max(tmp$Temperature)
       newx <- data.frame(Temperature = seq(minx, maxx, 0.01))
-      newy <- data.frame('NLME'=numeric(nrow(newx)),
-                         'LME' =numeric(nrow(newx)),
-                         'LFE' =numeric(nrow(newx)))
+      newy <- data.frame('LFE' =numeric(nrow(newx)))
+      
       #Find index for this taxon
-      wNLME <- which(rownames(result.nlme)==id)
-      newy$NLME <- result.nlme[wNLME, 'A'] * exp(result.nlme[wNLME, 'E'] * T.K(newx$Temperature))
-      
-      wLME <- which(rownames(result.lme)==id)
-      newy$LME  <- exp(result.lme[wLME, 1] + result.lme[wLME, 2] * T.K(newx$Temperature))
-      
       newy$LFE  <- exp(coef(LFE)[1] + coef(LFE)[2] * T.K(newx$Temperature))
       
       #Plotting original data points
@@ -298,13 +281,9 @@ plot_taxon <- function(dat, filename, caption = ''){
            xlab = 'Temperature (ºC)',
            ylab = YLAB,
            cex.lab = 1.1)
-      #lines(newx$Temperature, newy$NLME, col=2, lwd=1.3)
-      #lines(newx$Temperature, newy$LME,  col=3, lwd=1.3)
       lines(newx$Temperature, newy$LFE,  col='blue', lwd=1.3)
       txt  <- paste0(tmp$Sp[1])
       mtext(txt, adj = 0, cex=.7)  #Add caption
-      #text(34.4, 0, paste('Ea.nlme = ', round(result.nlme[wNLME, 'E'],2)), pos=2, col=2)
-      #text(34.4, umax*0.15,paste('Ea.lme = ', round( result.lme[wLME, 2],2)), pos=2, col=3)
       text(34.4, umax*0.3, paste('Eintra = ', round( coef(LFE)[2], 2)), pos=2, col='blue')
   }
   #Add figure caption
@@ -312,5 +291,5 @@ plot_taxon <- function(dat, filename, caption = ''){
   dev.off()
 }
 
-plot_taxon(PEuk2, phypdffile, 'Fig. S1. Growth rate versus temperature plots for each autotrophic taxon')
+plot_taxon(PEuk2,   phypdffile, 'Fig. S1. Growth rate versus temperature plots for each autotrophic taxon')
 plot_taxon(zoodat2, zoopdffile, 'Fig. S2. Growth rate versus temperature plots for each heterotrophic taxon')
