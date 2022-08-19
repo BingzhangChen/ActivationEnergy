@@ -198,7 +198,7 @@ x1 <- c(0, 15)
 y1 <- T.K(x1)
 
 #All eukaryotic autotrophic protists
-par(fig = c(0, .5, 0.75, 1), new = T)  
+par(fig = c(0, .5, 0.75, 1))  
 plot(PEuk2$X, log(PEuk2$Growth), pch = 16, cex=.5,
     xlim = c(-2.5,4),
     ylim = YLIM,
