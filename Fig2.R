@@ -125,7 +125,7 @@ plot_Einter <- function(oridat, XLAB = '', plot.legend = FALSE){
              col = jet.colors(Ncol), 
              cex = .6,
              pch = Shapes)
-      text(-2.4, -0.36, bquote(T[opt]), cex=.6, pos=4)   
+      text(-2.4, -0.31, bquote(italic(T[opt])), cex=.6, pos=4)   
   }
 }
 
@@ -186,7 +186,7 @@ plot_EL <- function(oridat, XLAB = '', plot.legend = FALSE){
 }
 
 fname <- paste0('Fig2OLS_both.pdf')
-pdf(fname, width = 7, height = 12)
+pdf(fname, width = 7, height = 12, useDingbats=FALSE)
 par(font.lab  = 1,
     family    = "serif",
     mgp       = c(2.2,1,0),
@@ -209,7 +209,7 @@ points(PEuk[PEuk$right,]$X,
 z <- lm(log(Growth) ~ X, PEuk2[PEuk2$Growth > 0, ])
 abline(z)
 
-text(-2.6, 1.85, pos=4, expression(bold(A)*') Autotrophs '*italic(E[app])))
+text(-2.6, 1.85, pos=4, expression('A) Autotrophs '*italic(E[app])))
 x1[length(x1)] <- paste0(x1[length(x1)],' ºC')
 axis(3, at= y1, label = x1)  #Add comparisons of Celcius
 
@@ -223,12 +223,12 @@ points(zoodat[zoodat$right,]$X, log(zoodat[zoodat$right,]$Growth), pch = 16, col
 zoo.lm0 <- lm(log(Growth) ~ X, zoodat2[zoodat2$Growth > 0, ])
 abline(zoo.lm0)
 
-mtext(expression(bold(B)*') Heterotrophs '*italic(E[app])), side=3, adj=0)
+mtext(expression('B) Heterotrophs '*italic(E[app])), side=3, adj=0)
 
 par(fig = c(0, .5, 0.5, .75), new = T)  
 plot_Ea_example(PEuk2, XLAB = expression(paste(italic(x) *' ('*eV^-1*')' ) ) )
 
-mtext(expression(bold(C)*') Autotrophs '*italic(E[intra])), adj=0)
+mtext(expression('C) Autotrophs '*italic(E[intra])), adj=0)
 par(fig = c(0.22,.48, 0.53, .7), new = T)  #Plot inset
 par(mgp = c(1,.1,0))
 plot_Ea_hist(PEuk2)
@@ -236,7 +236,7 @@ plot_Ea_hist(PEuk2)
 par(mgp=c(2.2,1,0))
 par(fig = c(0.5, 1, 0.5,.75), new = T)  
 plot_Ea_example(zoodat2, XLAB = expression(paste(italic(x) *' ('*eV^-1*')') ) ) 
-mtext(expression(bold(D)*') Heterotrophs '*italic(E[intra])), adj=0)
+mtext(expression('D) Heterotrophs '*italic(E[intra])), adj=0)
 par(fig = c(0.72,.98, 0.53, .7), new = T)  #Plot inset
 par(mgp=c(1,.1,0))
 plot_Ea_hist(zoodat2)
@@ -245,12 +245,12 @@ plot_Ea_hist(zoodat2)
 par(mgp=c(2.2,1,0))
 par(fig = c(0, 0.5, 0.25, 0.5), new = T)  
 plot_Einter(PEuk2, XLAB = expression(paste(italic(bar(x)) * ' ('*eV^-1*')' )) )
-mtext(expression(bold(E)*') Autotrophs '*italic(E[inter])), adj=0)
+mtext(expression('E) Autotrophs '*italic(E[inter])), adj=0)
 
 par(fig = c(0.5, 1, 0.25, 0.5), new = T)  
 plot_Einter(zoodat2, XLAB = expression(paste(italic(bar(x)) * ' ('*eV^-1*')')),
             plot.legend = T )
-mtext(expression(bold(F)*') Heterotrophs '*italic(E[inter])), adj=0)
+mtext(expression('F) Heterotrophs '*italic(E[inter])), adj=0)
 
 #Plot out EL
 par(fig = c(0, 0.5, 0, 0.25), new = T)  
