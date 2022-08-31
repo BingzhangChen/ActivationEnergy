@@ -20,7 +20,7 @@ Bingzhang Chen is responsible for collecting the data and writing the R code.
 
 ## LICENSE
 
-All the data and codes are covered by the MIT license. Please see the **LICENSE** file for details.
+All the codes are covered by the MIT license and the data are covered by the CC0 license. Please see the **LICENSE** file for details.
 
 # Metadata
 
@@ -68,19 +68,17 @@ All the codes are written in R 4.2.0. The following R packages are used: **forea
 
 ## Other supplemental materials
 
-1.  Supplement1.pdf: Derivations of Eq. 1 and Eq. 2 in the main text and additional analysis results of autotrophic and heterotrophic prokaryotes as well as insects (Table S1 and S2).
+1.  AmNat60700Suppl.pdf: Supplemental files including Supplement 1 (Derivations of Eq. 1 and Eq. 2 in the main text and additional analysis results of autotrophic and heterotrophic prokaryotes as well as insects (Table S1 and S2)) and Supplement 2 (Estimations of $E_{app}$ by incorporating cell size (Table S3)).
 
-2.  Supplement2.docx: Estimations of $E_{app}$ by incorporating cell size (Table S3).
+2.  TableS4_Autotrophic_protists_summary.pdf: Summaries of autotrophic protists used in this study (Table S4).
 
-3.  TableS4_Autotrophic_protists_summary.pdf: Summaries of autotrophic protists used in this study (Table S4).
+3.  TableS5_Heterotrophic_protists_summary.pdf: Summaries of heterotrophic protists used in this study (Table S5).
 
-4.  TableS5_Heterotrophic_protists_summary.pdf: Summaries of heterotrophic protists used in this study (Table S5).
+4.  AProtist_bytaxon_linear.pdf: Individual fits of growth rate \~ temperature of each taxon of autotrophic protists using Ordinary Least-Square linear regression models.
 
-5.  AProtist_bytaxon_linear.pdf: Individual fits of growth rate \~ temperature of each taxon of autotrophic protists using Ordinary Least-Square linear regression models.
+5.  HProtist_bytaxon_linear.pdf: Individual fits of growth rate \~ temperature of each taxon of heterotrophic protists using Ordinary Least-Square linear regression models.
 
-6.  HProtist_bytaxon_linear.pdf: Individual fits of growth rate \~ temperature of each taxon of heterotrophic protists using Ordinary Least-Square linear regression models.
-
-7. Session_Info.png: the output of the command **sessionInfo()** showing the detailed software package versions as well as dependencies.
+6. Session_Info.png: the output of the command **sessionInfo()** showing the detailed software package versions as well as dependencies.
 
 ## Funding
 
