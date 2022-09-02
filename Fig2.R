@@ -256,11 +256,11 @@ mtext(expression('F) Heterotrophs '*italic(E[inter])), adj=0)
 par(fig = c(0, 0.5, 0, 0.25), new = T)  
 plot_EL(PEuk2, XLAB = expression(paste(italic(x[m]) *' ('*eV^-1*')' ))  )
 
-mtext(expression(bold(G)*') Autotrophs '*italic(E[L])), adj=0)
+mtext(expression('G) Autotrophs '*italic(E[L])), adj=0)
 
 par(fig = c(0.5, 1, 0, 0.25), new = T)  
 plot_EL(zoodat2, XLAB = expression(paste(italic(x[m]) *' ('*eV^-1*')' )) ) 
 
-mtext(expression(bold(H)*') Heterotrophs '*italic(E[L])), adj=0)
+mtext(expression('H) Heterotrophs '*italic(E[L])), adj=0)
 
 dev.off()
